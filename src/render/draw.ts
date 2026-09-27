@@ -44,8 +44,12 @@ export function draw(c: CanvasRenderingContext2D, s: Session, L: Layout, skin: S
 
   for (const k of s.board.walls) {
     const x = k % s.board.w, y = Math.floor(k / s.board.w)
-    round(c, L.ox + x * L.cell + L.cell * 0.1, L.oy + y * L.cell + L.cell * 0.1, L.cell * 0.8, L.cell * 0.8, L.cell * 0.18, '#141a2e')
-    c.strokeStyle = 'rgba(255,255,255,0.18)'; c.lineWidth = 1.5; c.stroke()
+    round(c, L.ox + x * L.cell + L.cell * 0.1, L.oy + y * L.cell + L.cell * 0.1, L.cell * 0.8, L.cell * 0.8, L.cell * 0.18, '#2a3358')
+    c.strokeStyle = 'rgba(255,255,255,0.35)'; c.lineWidth = 2; c.stroke()
+    // Cross-hatch so a wall never reads as an empty cell.
+    c.strokeStyle = 'rgba(255,255,255,0.12)'; c.lineWidth = 1.5
+    const x0 = L.ox + x * L.cell + L.cell * 0.25, y0 = L.oy + y * L.cell + L.cell * 0.25, q = L.cell * 0.5
+    c.beginPath(); c.moveTo(x0, y0 + q); c.lineTo(x0 + q, y0); c.moveTo(x0, y0 + q * 0.5); c.lineTo(x0 + q * 0.5, y0); c.moveTo(x0 + q * 0.5, y0 + q); c.lineTo(x0 + q, y0 + q * 0.5); c.stroke()
   }
 
   for (const [k, m] of s.board.mirrors) {
@@ -61,7 +65,15 @@ export function draw(c: CanvasRenderingContext2D, s: Session, L: Layout, skin: S
   // A hinted piece shows the way it would go.
   if (s.hint) {
     const p = s.board.pieces.find((q) => q.id === s.hint!.id)
-    if (p) drawPath(c, s, L, p, skin.hues[p.hue % skin.hues.length], s.t)
+    if (p) {
+      const col = skin.hues[p.hue % skin.hues.length]
+      drawPath(c, s, L, p, col, s.t)
+      // A ring on the arrow itself: many hinted arrows sit on the rim with no path to show.
+      const k = (s.t * 1.4) % 1
+      c.strokeStyle = '#ffffff'; c.globalAlpha = 1 - k; c.lineWidth = L.cell * 0.08
+      c.beginPath(); c.arc(cx(L, p.cells[0][0]), cy(L, p.cells[0][1]), L.cell * (0.45 + k * 0.45), 0, Math.PI * 2); c.stroke()
+      c.globalAlpha = 1
+    }
   }
 
   const moving = new Set(s.movers.map((m) => m.piece.id))
@@ -119,7 +131,8 @@ function snake(c: CanvasRenderingContext2D, pts: Array<[number, number]>, dir: n
   else a = 0
   glow(c, col, cell * 0.5)
   c.strokeStyle = col; c.lineWidth = cell * 0.3; c.lineCap = 'round'; c.lineJoin = 'round'
-  c.beginPath(); c.moveTo(hx, hy)
+  // Start the body behind the arrowhead so its round cap does not poke out past it.
+  c.beginPath(); c.moveTo(pts.length > 1 ? hx - Math.cos(a) * cell * 0.18 : hx, pts.length > 1 ? hy - Math.sin(a) * cell * 0.18 : hy)
   for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1])
   if (pts.length === 1) c.lineTo(hx - Math.cos(a) * cell * 0.25, hy - Math.sin(a) * cell * 0.25)
   c.stroke()
@@ -145,10 +158,14 @@ function snake(c: CanvasRenderingContext2D, pts: Array<[number, number]>, dir: n
 function drawPath(c: CanvasRenderingContext2D, s: Session, L: Layout, p: Piece, col: string, t: number): void {
   const tr = traceNow({ ...s.board, pieces: s.board.pieces.filter((q) => !s.leaving.has(q.id)) }, p)
   const pts: Array<[number, number]> = [[cx(L, p.cells[0][0]), cy(L, p.cells[0][1])], ...tr.path.map(([x, y]) => [cx(L, x), cy(L, y)] as [number, number])]
+  // Carry the line past the edge so the way out is unmistakable.
+  const d = tr.dirs.length ? tr.dirs[tr.dirs.length - 1] : p.dir
+  const [lx, ly] = pts[pts.length - 1]
+  pts.push([lx + Math.cos(ANGLE[d]) * L.cell * 1.3, ly + Math.sin(ANGLE[d]) * L.cell * 1.3])
   c.save()
   c.setLineDash([L.cell * 0.2, L.cell * 0.2])
   c.lineDashOffset = -t * L.cell * 2
-  c.strokeStyle = col; c.globalAlpha = 0.7; c.lineWidth = L.cell * 0.08
+  c.strokeStyle = col; c.globalAlpha = 0.85; c.lineWidth = L.cell * 0.14
   c.beginPath(); c.moveTo(pts[0][0], pts[0][1])
   for (const q of pts.slice(1)) c.lineTo(q[0], q[1])
   c.stroke()

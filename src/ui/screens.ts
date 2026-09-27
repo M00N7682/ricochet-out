@@ -118,6 +118,7 @@ export interface HudCtx {
   exit(): void
   hint(): void
   hammer(): void
+  hammering(): boolean
 }
 
 /** Top bar (level, hearts) and booster bar. Rebuilt whenever a count changes. */
@@ -136,8 +137,10 @@ export function showHud(c: HudCtx): void {
   if (c.spec.level < 4 && !c.daily) return
   const bar = h('div', 'boosters')
   const booster = (label: string, icon: string, n: number, price: number, use: () => void): void => {
-    const b = btn('', 'booster', () => {
-      if (n > 0) { use(); return }
+    const b = btn('', 'booster' + (label === 'hammer' && c.hammering() ? ' armed' : ''), () => {
+      // Read the count now: the bar may be older than the last purchase.
+      const have = label === 'hint' ? c.profile.boosters.hint : c.profile.boosters.hammer
+      if (have > 0 || (label === 'hammer' && c.hammering())) { use(); return }
       // Out of this booster: buy with stardust, or watch an ad for one.
       if (c.profile.dust >= price) { c.profile.dust -= price; addBooster(c.profile, label); save(c.profile); use(); return }
       if (NO_ADS) { toast('별가루가 부족해요'); return }

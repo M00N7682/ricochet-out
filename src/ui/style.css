@@ -89,7 +89,7 @@ html, body {
 
 .tip-layer { display: flex; justify-content: center; }
 .tip {
-  position: absolute; top: calc(var(--safe-t) + 70px); padding: 10px 16px; border-radius: 14px;
+  position: absolute; top: calc(var(--safe-t) + 64px); padding: 10px 16px; border-radius: 14px;
   background: rgba(255, 255, 255, 0.1); font-weight: 800; font-size: 15px; pointer-events: none;
   animation: tipin 0.3s ease;
 }
@@ -141,3 +141,4 @@ html, body {
 .ad-tag { align-self: flex-start; font-size: 11px; font-weight: 900; padding: 2px 8px; border-radius: 6px; background: var(--gold); color: #000; }
 .ad-title { font-weight: 800; }
 .ad-count { color: var(--dim); }
+.btn.booster.armed { box-shadow: 0 0 0 2px var(--gold) inset, 0 0 18px rgba(255, 209, 102, 0.5); }

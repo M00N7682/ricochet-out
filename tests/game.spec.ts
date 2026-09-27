@@ -66,15 +66,15 @@ test('clearing a level pays stardust and opens the next', async ({ page }) => {
 
 test('three bumps lose the level; an ad buys one more heart', async ({ page }) => {
   await fresh(page)
-  await page.evaluate(() => window.__ro.start(8))
+  await page.evaluate(() => window.__ro.start(30))
   for (let n = 0; n < 3; n++) {
-    await page.waitForTimeout(300)
-    await page.evaluate(() => {
+    await page.waitForTimeout(900)
+    expect(await page.evaluate(() => {
       const ro = window.__ro
       const free = new Set(ro.free())
       const stuck = ro.session!.board.pieces.find((p) => !free.has(p.id))!
-      ro.tapPiece(stuck.id)
-    })
+      return ro.tapPiece(stuck.id)
+    })).toBe('bump')
   }
   await expect(page.getByText('하트를 다 썼어요')).toBeVisible()
   await page.getByRole('button', { name: /하나 더/ }).click()
@@ -87,7 +87,7 @@ test('the hammer lifts any piece off the board', async ({ page }) => {
   await fresh(page)
   await page.evaluate(() => window.__ro.start(10))
   await page.getByRole('button', { name: /망치/ }).click()
-  await expect(page.getByText('지울 조각을 탭하세요')).toBeVisible()
+  await expect(page.getByText(/지울 화살표를 탭하세요/)).toBeVisible()
   const before = await page.evaluate(() => window.__ro.session!.board.pieces.length)
   const pt = await page.evaluate(() => {
     const ro = window.__ro as unknown as { free(): number[]; session: { board: { pieces: Array<{ id: number; cells: number[][] }> } }; layout: { cell: number; ox: number; oy: number } }
@@ -128,4 +128,24 @@ test('sampled levels up to 200 play out to a clear', async ({ page }) => {
     await page.evaluate((l) => window.__ro.start(l), lv)
     await solve(page)
   }
+})
+
+test('leaving right after the last arrow does not pop the win dialog over home', async ({ page }) => {
+  await fresh(page)
+  await page.evaluate(() => { window.__ro.profile.level = 6; window.__ro.start(5) })
+  await solve(page)
+  await page.evaluate(() => window.__ro.home())
+  await page.waitForTimeout(900)
+  await expect(page.locator('#win')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: '레벨 6' })).toBeVisible()
+})
+
+test('buying a hammer charges once, and a second tap cancels hammer mode', async ({ page }) => {
+  await fresh(page)
+  await page.evaluate(() => { const p = window.__ro.profile; p.boosters.hammer = 0; p.dust = 500; window.__ro.start(12) })
+  await page.getByRole('button', { name: /망치/ }).click()
+  await page.getByRole('button', { name: /망치/ }).click()
+  expect(await page.evaluate(() => window.__ro.profile.dust)).toBe(380)
+  await expect(page.getByText(/지울 화살표를 탭하세요/)).toHaveCount(0)
+  expect(await page.evaluate(() => window.__ro.profile.boosters.hammer)).toBe(1)
 })

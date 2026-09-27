@@ -45,6 +45,8 @@ export interface Session {
 
 const SPEED = 22 // cells per second
 const RUNOUT = 6
+/** Bumps run slower both ways so the push into the blocker reads. */
+const BUMP = 9
 
 export function start(spec: LevelSpec): Session {
   const board = generate(spec)
@@ -79,7 +81,11 @@ export function tap(s: Session, id: number): TapResult {
     if (s.hint?.id === id) s.hint = null
     return 'exit'
   }
-  s.movers.push({ piece, track, pos: body.length - 1, goal: track.length - 1 + 0.45, exits: false, back: false, hit: tr.blockedAt })
+  // Overshoot a little into the blocker so even a piece that cannot move at all visibly tries.
+  const end = track[track.length - 1]
+  const dLast: Dir = tr.dirs.length ? tr.dirs[tr.dirs.length - 1] : piece.dir
+  track.push([end[0] + DX[dLast] * 0.4, end[1] + DY[dLast] * 0.4])
+  s.movers.push({ piece, track, pos: body.length - 1, goal: track.length - 1, exits: false, back: false, hit: tr.blockedAt })
   s.hearts--
   s.mistakes++
   s.shake = 0.6
@@ -100,13 +106,13 @@ export function tick(s: Session, dt: number): void {
   for (const m of s.movers) {
     const start = m.piece.cells.length - 1
     if (!m.back) {
-      m.pos = Math.min(m.goal, m.pos + SPEED * dt)
+      m.pos = Math.min(m.goal, m.pos + (m.exits ? SPEED : BUMP) * dt)
       if (m.pos >= m.goal) {
         if (m.exits) done.push(m)
         else m.back = true
       }
     } else {
-      m.pos = Math.max(start, m.pos - SPEED * 1.4 * dt)
+      m.pos = Math.max(start, m.pos - BUMP * dt)
       if (m.pos <= start) done.push(m)
     }
   }
@@ -139,6 +145,7 @@ export const starsFor = (s: Session): number => (s.mistakes === 0 ? 3 : s.mistak
 
 /** Booster: point at a piece that can leave right now. */
 export function hint(s: Session): boolean {
+  if (s.hint) return false
   const f = free(standing(s)).filter((p) => !s.leaving.has(p.id))
   if (!f.length) return false
   s.hint = { id: f[Math.floor(Math.random() * f.length)].id, t: 0 }

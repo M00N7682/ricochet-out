@@ -53,8 +53,8 @@ const TRIES = 4
 /** Difficulty by level: fuller boards and deeper chains, mirrors from 3, walls from 25. */
 export function spec(level: number): LevelSpec {
   const tier: Tier = level % 25 === 0 ? 'super' : level % 10 === 0 ? 'hard' : 'normal'
-  const w = Math.min(10, 4 + Math.floor(level / 14))
-  const h = Math.min(15, 5 + Math.floor(level / 9))
+  const w = Math.min(9, 4 + Math.floor(level / 14))
+  const h = Math.min(14, 5 + Math.floor(level / 9))
   const ramp = Math.min(1, Math.max(0, (level - 3) / 110))
   // The first hard level is a nudge, not a wall.
   const early = level <= 10 ? 0.5 : 1
@@ -64,10 +64,10 @@ export function spec(level: number): LevelSpec {
   const mirrors = level < 3 ? 0 : Math.min(14, 1 + Math.floor(level / 6) + (tier !== 'normal' ? 2 : 0))
   const walls = level < 25 ? 0 : Math.min(10, 1 + Math.floor((level - 25) / 12))
   const maxLen = level < 5 ? 2 : level < 20 ? 3 : level < 60 ? 4 : 5
-  const bite = level <= 3 ? 0 : Math.min(3, 0.6 + level * 0.04) * (tier === 'normal' ? 1 : 1.4)
+  const bite = level === 2 ? 3 : level <= 3 ? 0 : Math.min(3, 0.6 + level * 0.04) * (tier === 'normal' ? 1 : 1.4)
   // A breather right after each hard level.
   const after = level > 10 && ((level - 1) % 25 === 0 || (level - 1) % 10 === 0)
-  const base = level <= 3 ? 1 : Math.min(8, 2 + 6 * (1 - Math.exp(-(level - 3) / 70)))
+  const base = level === 2 ? 2 : level <= 3 ? 1 : Math.min(8, 2 + 6 * (1 - Math.exp(-(level - 3) / 70)))
   const bump = tier === 'super' ? (level <= 25 ? 1.5 : 2.5) : tier === 'hard' ? (level <= 10 ? 0.5 : 1.5) : 0
   const depth = base + bump - (after ? 1 : 0)
   return { level, w, h, pieces, mirrors, walls, maxLen, bite, fill, depth, tier, seed: level * 2654435761 + 97 }
@@ -143,14 +143,17 @@ function build(s: LevelSpec, seed: number): Board {
       const mine = new Set(own)
       let blocks = 0
       for (const path of paths) if (path.some(([x, y]) => mine.has(key(b, x, y)))) blocks++
-      const bends = s.level >= 3 && tr.path.some(([x, y]) => b.mirrors.has(key(b, x, y))) ? 1.5 : 0
-      const score = blocks * s.bite + cells.length * 0.8 + bends + r()
+      const bends = s.level >= 3 && tr.path.some(([x, y]) => b.mirrors.has(key(b, x, y))) ? 3 : 0
+      // An arrow on the rim facing straight out asks nothing of the player.
+      const reach = tr.path.length === 0 ? -2.5 : Math.min(4, tr.path.length) * 0.25
+      const score = blocks * s.bite + cells.length * 0.8 + bends + reach + r()
       if (score > bestScore) { bestScore = score; best = p }
     }
     if (!best) break
     b.pieces.push(best); occ += best.cells.length; id++
   }
   if (s.level > 3) grow(b, goal - occ, s.maxLen + 1, r)
+  pruneMirrors(b)
   // The newest pieces were placed last; the player sees them in a stable order.
   b.pieces.sort((a, c) => a.id - c.id)
   return b
@@ -192,6 +195,19 @@ function grow(b: Board, budget: number, cap: number, r: () => number): void {
       p.cells.push(c); taken.add(key(b, c[0], c[1])); budget--; changed = true
     }
   }
+}
+
+/**
+ * Drops mirrors no arrow's way out ever crosses: they would only be decoration.
+ * Safe, since no path enters those cells, so no path changes.
+ */
+function pruneMirrors(b: Board): void {
+  const crossed = new Set<number>()
+  for (const q of b.pieces) {
+    const own = new Set(q.cells.map(([x, y]) => key(b, x, y)))
+    for (const [x, y] of trace(b, q, own).path) crossed.add(key(b, x, y))
+  }
+  for (const k of [...b.mirrors.keys()]) if (!crossed.has(k)) b.mirrors.delete(k)
 }
 
 /** Rounds of "every free piece leaves at once" needed to clear the board. */

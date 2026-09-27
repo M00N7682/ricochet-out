@@ -57,11 +57,11 @@ export interface Skin { id: string; name: string; price: number; hues: string[];
 
 export const SKINS: Skin[] = [
   { id: 'neon', name: '네온', price: 0, hues: ['#4cc9f0', '#f72585', '#b8f35d', '#ffd166', '#9d7bff', '#ff8c42'], bg: ['#0b1026', '#1a1045'] },
-  { id: 'ocean', name: '심해', price: 300, hues: ['#48cae4', '#90e0ef', '#00b4d8', '#caf0f8', '#72efdd', '#64dfdf'], bg: ['#03071e', '#023e8a'] },
+  { id: 'ocean', name: '심해', price: 300, hues: ['#48cae4', '#4361ee', '#00b4d8', '#f15bb5', '#2ec4b6', '#fee440'], bg: ['#03071e', '#023e8a'] },
   { id: 'sunset', name: '노을', price: 600, hues: ['#ffba08', '#faa307', '#f48c06', '#e85d04', '#ff6d00', '#ffd6a5'], bg: ['#240046', '#5a189a'] },
-  { id: 'candy', name: '캔디', price: 900, hues: ['#ff85a1', '#ffc2d1', '#a0c4ff', '#bdb2ff', '#caffbf', '#fdffb6'], bg: ['#2b193d', '#3a2051'] },
+  { id: 'candy', name: '캔디', price: 900, hues: ['#ff85a1', '#ff5d8f', '#a0c4ff', '#bdb2ff', '#9ef01a', '#ffd166'], bg: ['#2b193d', '#3a2051'] },
   { id: 'aurora', name: '오로라', price: 1400, hues: ['#80ffdb', '#72efdd', '#64dfdf', '#5390d9', '#7400b8', '#b8f35d'], bg: ['#001219', '#10002b'] },
-  { id: 'gold', name: '황금', price: 2200, hues: ['#ffd700', '#ffe066', '#fff3b0', '#e9c46a', '#f4a261', '#ffffff'], bg: ['#1b1b1b', '#3a2e05'] },
+  { id: 'gold', name: '황금', price: 2200, hues: ['#ffd700', '#ff9f1c', '#e76f51', '#e9c46a', '#f4a261', '#c08552'], bg: ['#1b1b1b', '#3a2e05'] },
 ]
 export const skinOf = (p: Profile): Skin => SKINS.find((s) => s.id === p.skin) ?? SKINS[0]
 
