@@ -1,0 +1,1 @@
+{ "name": "Ricochet Out", "short_name": "Ricochet", "display": "fullscreen", "orientation": "portrait", "background_color": "#0b1026", "theme_color": "#0b1026", "icons": [{ "src": "icon.png", "sizes": "1024x1024", "type": "image/png" }] }

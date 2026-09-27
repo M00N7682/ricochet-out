@@ -1,0 +1,30 @@
+{
+  "name": "ricochet-out",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Ricochet Out · 리코셰 아웃 — 거울 반사 탈출 퍼즐",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 4200 --strictPort",
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.3"
+  },
+  "dependencies": {
+    "@capacitor/cli": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/haptics": "^7.0.0",
+    "@capacitor/ios": "^7.6.9"
+  },
+  "engines": {
+    "node": "22.x"
+  },
+  "overrides": {
+    "rollup": "4.63.4"
+  }
+}
