@@ -27,8 +27,12 @@ let session: Session | null = null
 let isDaily = false
 let hammering = false
 let ended = false
+/** The free second chance of a store build without ads: once per attempt. */
+let usedHeart = false
 let L: Layout = { cell: 1, ox: 0, oy: 0, w: 0, h: 0 }
 let dpr = 1
+/** Tests and store shots freeze motion here. */
+let paused = false
 const TOP = 96, BOTTOM = 120
 
 function resize(): void {
@@ -60,6 +64,7 @@ function begin(s: LevelSpec, daily: boolean): void {
   isDaily = daily
   hammering = false
   ended = false
+  usedHeart = false
   profile.stats.plays++
   save(profile)
   track('level_start', { level: s.level, daily })
@@ -148,7 +153,8 @@ function finish(): void {
     play('lose')
     track('level_fail', { level: s.spec.level, cleared: s.cleared, total: s.total })
     setTimeout(() => showLose({
-      onHeart: () => { addHeart(s); ended = false; hud() },
+      canHeart: !usedHeart,
+      onHeart: () => { usedHeart = true; addHeart(s); ended = false; hud() },
       onRetry: () => begin(s.spec, isDaily),
       onHome: () => home(),
     }), 500)
@@ -162,7 +168,7 @@ function frame(now: number): void {
   c.setTransform(dpr, 0, 0, dpr, 0, 0)
   const W = window.innerWidth, H = window.innerHeight
   if (session) {
-    tick(session, dt)
+    if (!paused) tick(session, dt)
     L = layout(session, W, H, TOP, session.spec.level < 4 && !isDaily ? 40 : BOTTOM)
     draw(c, session, L, skinOf(profile), W, H, profile.settings.colorblind)
     if (session.spec.level === 1 && !isDaily && session.cleared === 0) finger(session, now / 1000)
@@ -200,6 +206,7 @@ Object.assign(window, {
     save: () => save(profile),
     tapPiece: (id: number) => (session ? tap(session, id) : 'none'),
     free: () => (session ? free({ ...session.board, pieces: session.board.pieces.filter((p) => !session!.leaving.has(p.id)) }).map((p) => p.id) : []),
+    pause: (v: boolean) => { paused = v },
     tick: (n: number, dt = 1 / 60) => { for (let i = 0; i < n; i++) if (session) tick(session, dt) },
     events, SIM, setAdProvider, NO_ADS,
   },

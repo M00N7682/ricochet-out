@@ -4,7 +4,7 @@ import type { Profile } from '../game/meta'
 import { BOOSTER_PRICE, SKINS, constellation, dailyState, save } from '../game/meta'
 import type { LevelSpec } from '../game/generate'
 import { spec } from '../game/generate'
-import { showRewarded } from '../ads'
+import { NO_ADS, showRewarded } from '../ads'
 import { track } from '../analytics'
 import { setMuted } from '../audio'
 import { setHaptics } from '../haptics'
@@ -140,11 +140,12 @@ export function showHud(c: HudCtx): void {
       if (n > 0) { use(); return }
       // Out of this booster: buy with stardust, or watch an ad for one.
       if (c.profile.dust >= price) { c.profile.dust -= price; addBooster(c.profile, label); save(c.profile); use(); return }
+      if (NO_ADS) { toast('별가루가 부족해요'); return }
       void showRewarded('booster_' + label).then((ok) => { if (ok) { addBooster(c.profile, label); save(c.profile); use() } })
     })
     b.appendChild(h('div', 'booster-icon', icon))
     b.appendChild(h('div', 'booster-name', label === 'hint' ? '힌트' : '망치'))
-    b.appendChild(h('div', 'booster-count', n > 0 ? String(n) : c.profile.dust >= price ? `✦${price}` : '▶ 광고'))
+    b.appendChild(h('div', 'booster-count', n > 0 ? String(n) : c.profile.dust >= price || NO_ADS ? `✦${price}` : '▶ 광고'))
     bar.appendChild(b)
   }
   booster('hint', '💡', c.profile.boosters.hint, BOOSTER_PRICE.hint, c.hint)
